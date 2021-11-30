@@ -24,29 +24,33 @@ fn main() {
 
 	let paths = fs::read_dir(data_dir).unwrap();
 
-	// Check all paths in the data directory.
-	for path in paths {
-		let folder_path = path.unwrap().path();
+	let mut summaries = Vec::<Summary>::new();
 
-		if !folder_path.is_dir() {
+	// Check all paths in the data directory.
+	for sample_dir_path in paths {
+		let sample_dir_path = sample_dir_path.unwrap().path();
+
+		if !sample_dir_path.is_dir() {
 			continue;
 		}
 
-		for file_path in fs::read_dir(folder_path).unwrap() {
-			let direntry = file_path.unwrap();
-			match direntry.file_name().to_str().unwrap() {
+		for path in fs::read_dir(sample_dir_path).unwrap() {
+			let path = path.unwrap().path();
+
+			match path.file_name().unwrap().to_str().unwrap() {
 				"summary.txt" => {
-					let file = fs::File::open(direntry.path()).unwrap();
+					let file = fs::File::open(path).unwrap();
 					let mut rdr = csv::ReaderBuilder::new()
 						.delimiter(b'\t')
 						.has_headers(false)
 						.from_reader(file);
-					for result in rdr.deserialize::<Summary>() {
-						println!("{:?}", result.unwrap());
+					for res in rdr.deserialize::<Summary>() {
+						summaries.push(res.unwrap());
 					}
 				}
 				_ => (),
 			}
 		}
 	}
+	println!("{:?}", summaries);
 }
