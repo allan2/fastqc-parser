@@ -8,6 +8,16 @@ This program summarizes the results together.
  - fastqc_data.txt
  - summary.txt
 
+FastQC takes your `fastqc.gz` files and outputs:
+ - an HTML file
+ - a zip file containing the HTML file along with other goodies
+
+This program relies on the unzipped directories of those ZIP files, all placed in a root directory.
+To turn those zip files into folders, `unzip` can be used:
+```sh
+unzip \*.zip
+```
+
 Roadmp
  - async
 

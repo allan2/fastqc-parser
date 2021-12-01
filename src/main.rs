@@ -21,7 +21,8 @@ struct Summary {
 	filename: String,
 }
 
-/// The inputs are the directories outputted from FastQC after unzipping. Each directory contains the report for a sample.
+/// The inputs are the directories outputted from FastQC after unzipping.
+/// Each directory contains the report for a sample.
 fn main() -> Result<(), Box<dyn error::Error>> {
 	let data_dir = Path::new("data");
 	let outfile = data_dir.join("report_aggregated.html");
@@ -30,7 +31,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
 	let mut sample_dirs = Vec::<String>::new();
 
-	// Check all paths in the data directory.
+	// Get a directory list of the sample directories.
 	for sample in paths {
 		let sample = sample?.path();
 		if !sample.is_dir() {
