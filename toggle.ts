@@ -1,5 +1,5 @@
-const toggleShowFail = () => {
-	let x = document.getElementsByClassName("fail") as HTMLCollectionOf<HTMLElement>;
+const toggleShowFailOnly = () => {
+	let x = document.getElementsByClassName("pass") as HTMLCollectionOf<HTMLElement>;
 	for (let i = 0; i < x.length; i++) {
 		if (x[i].style.display == "none") {
 			x[i].style.display = "block";

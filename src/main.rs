@@ -1,8 +1,9 @@
 use askama::Template;
 use chrono::{DateTime, Utc};
+use itertools::Itertools;
 use rustc_hash::FxHashMap;
 use serde::Deserialize;
-use std::{error, fs, io::Write, path::Path};
+use std::{error, fmt, fs, io::Write, path::Path};
 
 #[derive(Debug, Deserialize)]
 enum Flag {
@@ -19,7 +20,7 @@ enum Flag {
 struct Summary {
 	flag: Flag,
 	test: String,
-	filename: String,
+	filename: String, // we don't really need this
 }
 
 /// The inputs are the directories outputted from FastQC after unzipping.
@@ -69,6 +70,10 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 				_ => (),
 			}
 		}
+	}
+
+	for key in samples.keys().sorted() {
+		println!("{}", key);
 	}
 
 	let html = ReportTemplate::new(samples).render()?;

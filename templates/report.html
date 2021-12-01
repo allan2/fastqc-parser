@@ -37,11 +37,16 @@
 			max-width: 400px;
 			height: auto;
 		}
+
+		/* Show pass by default */
+		.pass {
+			display: block;
+		}
 	</style>
 	<script>
 		"use strict";
-		var toggleShowFail = function () {
-			var x = document.getElementsByClassName("fail");
+		var toggleShowFailOnly = function () {
+			var x = document.getElementsByClassName("pass");
 			for (var i = 0; i < x.length; i++) {
 				if (x[i].style.display == "none") {
 					x[i].style.display = "block";
@@ -51,26 +56,34 @@
 				}
 			}
 		};
-
 	</script>
 </head>
 
 <body>
 	<header>
-		{{ dt.to_rfc2822() }}
+		Generated on {{ dt.to_rfc2822() }}
 	</header>
 	<main>
 		<div id="toolbar">
 			<h2>Per base sequence quality</h2>
-			<input type="checkbox" id="check" onClick="toggleShowFail()">
+			<input type="checkbox" id="check" onClick="toggleShowFailOnly()">
 			<label for="check">Show failed only</label>
 		</div>
 
 		<div id="per-base-quality-grid">
-			{% for s in sample_dirs %}
-			<figure>
-				<img class="per-base-quality" src="{{s}}_fastqc/Images/per_base_quality.png" />
-				<figcaption>{{s}}</figcaption>
+			{% for (k, f) in sample_dirs %}
+			{% let flag -%}
+			{% match f %}
+			{% when Flag::Pass %}
+			{% let flag = "pass" -%}
+			{% when Flag::Warn %}
+			{% let flag = "fail" -%}
+			{% when Flag::Fail %}
+			{% let flag = "fail" -%}
+			{% endmatch %}
+			<figure class="{{ flag }}">
+				<img class="per-base-quality" src="{{k}}_fastqc/Images/per_base_quality.png" />
+				<figcaption>{{k}}</figcaption>
 			</figure>
 			{% endfor %}
 		</div>
