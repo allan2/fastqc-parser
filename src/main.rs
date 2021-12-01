@@ -1,6 +1,7 @@
-use rustc_hash::FxHashSet;
+use askama::Template;
+use chrono::{DateTime, Utc};
 use serde::Deserialize;
-use std::{fs, path::Path, ffi::OsString};
+use std::{error, fs, io::Write, path::Path};
 
 #[derive(Debug, Deserialize)]
 enum Flag {
@@ -20,40 +21,50 @@ struct Summary {
 	filename: String,
 }
 
-/// The inputs are the directories outputted from FastQC. Each directory contains the report for a sample.
-fn main() {
+/// The inputs are the directories outputted from FastQC after unzipping. Each directory contains the report for a sample.
+fn main() -> Result<(), Box<dyn error::Error>> {
 	let data_dir = Path::new("data");
-	let paths = fs::read_dir(data_dir).unwrap();
-	let mut samples = FxHashSet::<OsString>::default();
+	let outfile = data_dir.join("report_aggregated.html");
+
+	let paths = fs::read_dir(data_dir)?;
+
+	let mut sample_dirs = Vec::<String>::new();
 
 	// Check all paths in the data directory.
 	for sample in paths {
-		let filename = sample.unwrap().file_name();
-
-		// if !sample_dir_path.is_dir() {
-		// 	continue;
-		// }
-
-		//let curr = sample_dir_path.to_owned();
-
-		//samples.insert(curr.file_name().unwrap().to_str().unwrap());
-
-		// for path in fs::read_dir(sample_dir_path).unwrap() {
-		// 	let path = path.unwrap().path();
-		// 	match path.file_name().unwrap().to_str().unwrap() {
-		// 		"summary.txt" => {
-		// 			let file = fs::File::open(path).unwrap();
-		// 			let mut rdr = csv::ReaderBuilder::new()
-		// 				.delimiter(b'\t')
-		// 				.has_headers(false)
-		// 				.from_reader(file);
-		// 			for res in rdr.deserialize::<Summary>() {
-		// 				summaries.push(res.unwrap());
-		// 			}
-		// 		}
-		// 		_ => (),
-		// 	}
-		// }
+		let sample = sample?.path();
+		if !sample.is_dir() {
+			continue;
+		}
+		let dir = sample
+			.file_name()
+			.unwrap()
+			.to_str()
+			.unwrap()
+			.split("_fastqc")
+			.collect::<Vec<&str>>()[0]
+			.to_owned();
+		sample_dirs.push(dir);
 	}
-	//println!("{:?}", summaries);
+
+	let html = ReportTemplate::new(sample_dirs).render()?;
+	let mut file = fs::File::create(outfile)?;
+	file.write_all(html.to_string().as_bytes())?;
+	Ok(())
+}
+
+#[derive(Template)]
+#[template(path = "report.html")]
+struct ReportTemplate {
+	sample_dirs: Vec<String>,
+	dt: DateTime<Utc>,
+}
+
+impl ReportTemplate {
+	fn new(sample_dirs: Vec<String>) -> Self {
+		ReportTemplate {
+			sample_dirs,
+			dt: Utc::now(),
+		}
+	}
 }

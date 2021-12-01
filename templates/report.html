@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>FastQC Aggregated Report</title>
+	<style>
+		body {
+			margin: 0;
+			font-family: sans-serif;
+		}
+
+		main {
+			max-width: 1600px;
+			margin: 0 auto;
+		}
+
+		header {
+			padding: 0.5em;
+			background: #eee;
+		}
+
+		h2 {
+			color: #800000;
+			font-size: 1.5em;
+		}
+
+		#per-base-quality-grid {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			grid-gap: 0.5em;
+			grid-auto-rows: minmax(1em, auto);
+		}
+
+		.per-base-quality {
+			display: block;
+			max-width: 600px;
+		}
+	</style>
+	<script>
+		"use strict";
+		var toggleShowFail = function () {
+			var x = document.getElementsByClassName("fail");
+			for (var i = 0; i < x.length; i++) {
+				if (x[i].style.display == "none") {
+					x[i].style.display = "block";
+				}
+				else {
+					x[i].style.display = "none";
+				}
+			}
+		};
+
+	</script>
+</head>
+
+<body>
+	<header>
+		{{ dt.to_rfc2822() }}
+	</header>
+	<main>
+		<h2>Per base sequence quality</h2>
+		<input type="checkbox" id="check" onClick="toggleShowFail()">
+		<label for="check">Show failed only</label>
+		<div id="per-base-quality-grid">
+			{% for s in sample_dirs %}
+			<figure>
+				<img class="per-base-quality" src="{{s}}_fastqc/Images/per_base_quality.png" />
+				<figcaption>{{s}}</figcaption>
+			</figure>
+			{% endfor %}
+		</div>
+		<p class="fail">
+			Fail
+		</p>
+	</main>
+</body>
+
+</html>
