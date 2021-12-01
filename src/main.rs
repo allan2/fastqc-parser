@@ -1,9 +1,7 @@
 use askama::Template;
 use chrono::{DateTime, Utc};
-use itertools::Itertools;
-use rustc_hash::FxHashMap;
 use serde::Deserialize;
-use std::{error, fmt, fs, io::Write, path::Path};
+use std::{collections::BTreeMap, error, fs, io::Write, path::Path};
 
 #[derive(Debug, Deserialize)]
 enum Flag {
@@ -32,7 +30,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 	let paths = fs::read_dir(data_dir)?;
 
 	// this is just for per base sequence quality for now
-	let mut samples = FxHashMap::<String, Flag>::default();
+	let mut samples = BTreeMap::<String, Flag>::default();
 
 	// Get a directory list of the sample directories.
 	for sample in paths {
@@ -62,7 +60,18 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 						let res = res?;
 						if res.test == "Per base sequence quality" {
 							// TODO: Remove clone. It's inexpensive but can be avoided
-							samples.insert(dir.clone(), res.flag);
+							let mut k = dir.clone();
+							// We use zero-padded filenames as keys.
+							// For example, Sample1 is Sample01.
+							// This gives us the natural ordering that we want in the template.
+							let part = k.splitn(2, "Sample").collect::<Vec<&str>>()[1]
+								.splitn(2, "_")
+								.collect::<Vec<&str>>();
+							let sample_num = part[0].parse::<u32>()?;
+							if sample_num < 10 {
+								k = format!("Sample0{}_{}", sample_num, part[1]);
+							}
+							samples.insert(k, res.flag);
 							continue 'outer;
 						}
 					}
@@ -70,10 +79,6 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 				_ => (),
 			}
 		}
-	}
-
-	for key in samples.keys().sorted() {
-		println!("{}", key);
 	}
 
 	let html = ReportTemplate::new(samples).render()?;
@@ -85,12 +90,12 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 #[derive(Template)]
 #[template(path = "report.html")]
 struct ReportTemplate {
-	sample_dirs: FxHashMap<String, Flag>,
+	sample_dirs: BTreeMap<String, Flag>,
 	dt: DateTime<Utc>,
 }
 
 impl ReportTemplate {
-	fn new(sample_dirs: FxHashMap<String, Flag>) -> Self {
+	fn new(sample_dirs: BTreeMap<String, Flag>) -> Self {
 		ReportTemplate {
 			sample_dirs,
 			dt: Utc::now(),

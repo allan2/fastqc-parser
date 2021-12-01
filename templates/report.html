@@ -81,9 +81,10 @@
 			{% when Flag::Fail %}
 			{% let flag = "fail" -%}
 			{% endmatch %}
+			{% let key = k.replace("Sample0", "Sample") %}
 			<figure class="{{ flag }}">
-				<img class="per-base-quality" src="{{k}}_fastqc/Images/per_base_quality.png" />
-				<figcaption>{{k}}</figcaption>
+				<img class="per-base-quality" src="{{key}}_fastqc/Images/per_base_quality.png" />
+				<figcaption>{{key}}</figcaption>
 			</figure>
 			{% endfor %}
 		</div>
