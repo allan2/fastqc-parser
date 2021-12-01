@@ -1,6 +1,6 @@
 # fastqc-parser
 
-Often, we want to gather results from multiple FastQC files. The number could be in the hundreds.
+This program creates an aggregate report from mulitple FastQC reports.
 
 This program summarizes the results together.
 
