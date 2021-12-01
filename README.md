@@ -8,4 +8,7 @@ This program summarizes the results together.
  - fastqc_data.txt
  - summary.txt
 
+Roadmp
+ - async
+
 WORK IN PROGRESS
