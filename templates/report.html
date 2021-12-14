@@ -23,13 +23,12 @@
 			padding: 0 16px;
 		}
 
-		#per-base-quality-grid {
+		.per-base-quality-grid {
 			width: 100%;
 			display: grid;
 			grid-template-columns: repeat(4, 1fr);
 			/* column gap of 6px allows 4 imagse with 400px width on 1920 width screen */
 			column-gap: 6px;
-
 		}
 
 		.per-base-quality {
@@ -44,7 +43,42 @@
 		}
 
 		#results-count {
-			margin-left: 72px;
+			margin-left: 48px;
+		}
+
+		#toolbar-row {
+			display: flex;
+			align-items: center;
+		}
+
+		#tabs {
+			display: flex;
+			margin-right: 80px;
+		}
+
+		#tabs button {
+			background-color: inherit;
+			float: left;
+			border: none;
+			outline: none;
+			cursor: pointer;
+			padding: 14px 16px;
+			margin: 0px 10px;
+			font-size: 1.2em;
+		}
+
+		#tabs button:hover {
+			background-color: #ddd;
+		}
+
+		#tabs button.active {
+			border: 2px solid blue;
+			color: #000;
+			cursor: auto;
+		}
+
+		#tabs button.active:hover {
+			background-color: #fff;
 		}
 	</style>
 </head>
@@ -56,69 +90,129 @@
 	<main>
 		<div id="toolbar">
 			<h2>Per base sequence quality</h2>
-			<input type="checkbox" id="check" onClick="toggleShowFailOnly()">
-			<label for="check">Show failed only</label>
-			<span id="results-count"></span>
+			<div id="toolbar-row">
+				<div id="tabs">
+					<button id="before-trim-btn" class="tab-btn active">Before trimming</button>
+					<button id="after-trim-btn" class="tab-btn">After trimming</button>
+				</div>
+				<input type="checkbox" id="check">
+				<label for="check">Show failed only</label>
+				<span id="results-count"></span>
+			</div>
 		</div>
 
-		<div id="per-base-quality-grid">
-			{% for (k, f) in sample_dirs %}
-			{% let flag -%}
-			{% match f %}
-			{% when Flag::Pass %}
-			{% let flag = "pass" -%}
-			{% when Flag::Warn %}
-			{% let flag = "fail" -%}
-			{% when Flag::Fail %}
-			{% let flag = "fail" -%}
-			{% endmatch %}
-			{% let key = k.replace("Sample0", "Sample") %}
-			<figure class="{{ flag }}">
-				<img class="per-base-quality" src="{{key}}_fastqc/Images/per_base_quality.png" />
-				<figcaption>{{key}}</figcaption>
-			</figure>
-			{% endfor %}
+		<div id="before-trim-content" class="tab-content">
+			<p>hello</p>
+			<div class="per-base-quality-grid">
+				{% for (k, f) in sample_dirs %}
+				{% let flag -%}
+				{% match f %}
+				{% when Flag::Pass %}
+				{% let flag = "pass" -%}
+				{% when Flag::Warn %}
+				{% let flag = "fail" -%}
+				{% when Flag::Fail %}
+				{% let flag = "fail" -%}
+				{% endmatch %}
+				{% let key = k.replace("Sample0", "Sample") %}
+				<figure class="{{ flag }}">
+					<img class="per-base-quality" src="{{key}}_fastqc/Images/per_base_quality.png" />
+					<figcaption>{{key}}</figcaption>
+				</figure>
+				{% endfor %}
+			</div>
+		</div>
+		<div id="after-trim-content" class="tab-content">
+			<p>Goodbye</p>
+			<div class="per-base-quality-grid">
+				{% for (k, f) in sample_dirs %}
+				{% let flag -%}
+				{% match f %}
+				{% when Flag::Pass %}
+				{% let flag = "pass" -%}
+				{% when Flag::Warn %}
+				{% let flag = "fail" -%}
+				{% when Flag::Fail %}
+				{% let flag = "fail" -%}
+				{% endmatch %}
+				{% let key = k.replace("Sample0", "Sample") %}
+				<figure class="{{ flag }}">
+					<img class="per-base-quality" src="{{key}}_fastqc/Images/per_base_quality.png" />
+					<figcaption>{{key}}</figcaption>
+				</figure>
+				{% endfor %}
+			</div>
+		</div>
 		</div>
 	</main>
 	<script>
 		"use strict";
+		// mutable state
+		// mutable state
 		var showFailOnly = false;
-		var totalCount = document.querySelectorAll('figure').length;
-		var passCount = document.querySelectorAll('.pass').length;
+		var getCounts = function (divId) {
+			var d = document.getElementById(divId);
+			return [d.querySelectorAll('figure').length, d.querySelectorAll('.pass').length];
+		};
+		var _a = getCounts("before-trim-content"), totalCount = _a[0], passCount = _a[1];
 		var numResults = totalCount;
 		var resultsCountEl = document.getElementById("results-count");
-		var showingMsg = function (count) {
-			var s = "Showing ".concat(count, " result");
-			if (count != 1) {
+		var showingMsg = function (n) {
+			var s = "Showing ".concat(n, " result");
+			if (n != 1) {
 				s += "s";
 			}
 			return s;
 		};
-		if (resultsCountEl !== null) {
-			resultsCountEl.innerHTML = showingMsg(numResults);
-		}
+		resultsCountEl.innerHTML = showingMsg(numResults);
 		var toggleShowFailOnly = function () {
 			showFailOnly = !showFailOnly;
 			var x = document.getElementsByClassName("pass");
 			for (var i = 0; i < x.length; i++) {
-				if (x[i].style.display == "none") {
-					x[i].style.display = "block";
-				}
-				else {
-					x[i].style.display = "none";
-				}
+				toggleVisible(x[i]);
 			}
-			if (resultsCountEl !== null) {
-				var numResults_1;
-				if (!showFailOnly) {
-					numResults_1 = totalCount;
-				}
-				else {
-					numResults_1 = passCount;
-				}
-				resultsCountEl.innerHTML = showingMsg(numResults_1);
+			if (!showFailOnly) {
+				numResults = totalCount;
 			}
+			else {
+				numResults = passCount;
+			}
+			resultsCountEl.innerHTML = showingMsg(numResults);
 		};
+		var toggleVisible = function (el) { return (el.style.display == "none") ? el.style.display = "block" : el.style.display = "none"; };
+		var checkBox = document.getElementById("check");
+		checkBox === null || checkBox === void 0 ? void 0 : checkBox.addEventListener("change", toggleShowFailOnly);
+		var openTab = function (e) {
+			var _a;
+			// Hide all tab content elements.
+			var tabContentEls = document.getElementsByClassName("tab-content");
+			for (var i = 0; i < tabContentEls.length; i++) {
+				tabContentEls[i].style.display = "none";
+			}
+			// Remove the active class from the tab buttons.
+			var tabBtns = document.getElementsByClassName("tab-btn");
+			for (var i = 0; i < tabBtns.length; i++) {
+				tabBtns[i].classList.remove("active");
+				tabBtns[i].disabled = false;
+			}
+			var currEl = e.target;
+			var contentId = "before-trim-content";
+			if (currEl.id === "after-trim-btn") {
+				contentId = "after-trim-content";
+			}
+			// Update the counts.
+			_a = getCounts(contentId), totalCount = _a[0], passCount = _a[1];
+			// Show the tab's content.
+			var content = document.getElementById(contentId);
+			content.style.display = "block";
+			// Make th tab button active.
+			currEl.classList.add("active");
+			currEl.disabled = true;
+		};
+		var tabBtns = document.querySelectorAll(".tab-btn");
+		for (var i = 0; i < tabBtns.length; i++) {
+			tabBtns[i].addEventListener("click", openTab);
+		}
 	</script>
 </body>
 
