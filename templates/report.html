@@ -42,21 +42,11 @@
 		.pass {
 			display: block;
 		}
+
+		#results-count {
+			margin-left: 72px;
+		}
 	</style>
-	<script>
-		"use strict";
-		var toggleShowFailOnly = function () {
-			var x = document.getElementsByClassName("pass");
-			for (var i = 0; i < x.length; i++) {
-				if (x[i].style.display == "none") {
-					x[i].style.display = "block";
-				}
-				else {
-					x[i].style.display = "none";
-				}
-			}
-		};
-	</script>
 </head>
 
 <body>
@@ -68,6 +58,7 @@
 			<h2>Per base sequence quality</h2>
 			<input type="checkbox" id="check" onClick="toggleShowFailOnly()">
 			<label for="check">Show failed only</label>
+			<span id="results-count"></span>
 		</div>
 
 		<div id="per-base-quality-grid">
@@ -89,6 +80,46 @@
 			{% endfor %}
 		</div>
 	</main>
+	<script>
+		"use strict";
+		var showFailOnly = false;
+		var totalCount = document.querySelectorAll('figure').length;
+		var passCount = document.querySelectorAll('.pass').length;
+		var numResults = totalCount;
+		var resultsCountEl = document.getElementById("results-count");
+		var showingMsg = function (count) {
+			var s = "Showing ".concat(count, " result");
+			if (count != 1) {
+				s += "s";
+			}
+			return s;
+		};
+		if (resultsCountEl !== null) {
+			resultsCountEl.innerHTML = showingMsg(numResults);
+		}
+		var toggleShowFailOnly = function () {
+			showFailOnly = !showFailOnly;
+			var x = document.getElementsByClassName("pass");
+			for (var i = 0; i < x.length; i++) {
+				if (x[i].style.display == "none") {
+					x[i].style.display = "block";
+				}
+				else {
+					x[i].style.display = "none";
+				}
+			}
+			if (resultsCountEl !== null) {
+				var numResults_1;
+				if (!showFailOnly) {
+					numResults_1 = totalCount;
+				}
+				else {
+					numResults_1 = passCount;
+				}
+				resultsCountEl.innerHTML = showingMsg(numResults_1);
+			}
+		};
+	</script>
 </body>
 
 </html>
