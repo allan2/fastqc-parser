@@ -1,5 +1,6 @@
 use askama::Template;
 use chrono::{DateTime, Utc};
+use clap::{App, Arg};
 use serde::Deserialize;
 use std::{collections::BTreeMap, error, fs, io::Write, path::Path};
 
@@ -24,8 +25,33 @@ struct Summary {
 /// The inputs are the directories outputted from FastQC after unzipping.
 /// Each directory contains the report for a sample.
 fn main() -> Result<(), Box<dyn error::Error>> {
-	let data_dir = Path::new("data");
-	let outfile = data_dir.join("report_aggregated.html");
+	let app = App::new("fastqc_report")
+		.version("0.1")
+		.about("Aggregator for FastQC reports")
+		.arg(
+			Arg::new("output_file")
+				.short('o')
+				.takes_value(true)
+				.default_value("aggregate_report.html"),
+		)
+		.arg(
+			Arg::new("input_dir")
+				.short('i')
+				.takes_value(true)
+				.required(true),
+		);
+
+	let matches = app.clone().get_matches();
+	let outfile = match matches.value_of("output_file") {
+		Some(v) => v,
+		None => unreachable!("No output file specified"),
+	};
+
+	let data_dir = match matches.value_of("input_dir") {
+		Some(v) => Path::new(v),
+		None => unreachable!("No input directory specified"),
+	};
+	let outfile = data_dir.join(outfile);
 
 	let paths = fs::read_dir(data_dir)?;
 
