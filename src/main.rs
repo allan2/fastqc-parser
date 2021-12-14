@@ -30,12 +30,14 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 		.about("Aggregator for FastQC reports")
 		.arg(
 			Arg::new("output_file")
+				.long("output_file")
 				.short('o')
 				.takes_value(true)
 				.default_value("aggregate_report.html"),
 		)
 		.arg(
 			Arg::new("input_dir")
+				.long("input_dir")
 				.short('i')
 				.takes_value(true)
 				.required(true),
