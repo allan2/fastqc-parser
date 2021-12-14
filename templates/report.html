@@ -125,7 +125,7 @@
 		<div id="after-trim-content" class="tab-content">
 			<p>Goodbye</p>
 			<div class="per-base-quality-grid">
-				{% for (k, f) in sample_dirs %}
+				{% for (k, f) in trimmed_dirs %}
 				{% let flag -%}
 				{% match f %}
 				{% when Flag::Pass %}

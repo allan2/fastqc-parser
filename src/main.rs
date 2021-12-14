@@ -49,7 +49,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 				.long("trimmed_dir")
 				.short('t')
 				.takes_value(true)
-				.required(false)
+				.required(true)
 				.help("Location of trimmed FastQC reports"),
 		);
 
@@ -65,7 +65,22 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 	};
 	let outfile = data_dir.join(outfile);
 
-	let paths = fs::read_dir(data_dir)?;
+	let samples = samples_map(data_dir)?;
+
+	let trimmed_dir = match matches.value_of("trimmed_dir") {
+		Some(v) => Path::new(v),
+		None => unreachable!("No trimmed directory specified"),
+	};
+
+	let trimmed = samples_map(trimmed_dir)?;
+	let html = ReportTemplate::new(samples, trimmed).render()?;
+	let mut file = fs::File::create(outfile)?;
+	file.write_all(html.to_string().as_bytes())?;
+	Ok(())
+}
+
+fn samples_map(path: &Path) -> Result<BTreeMap<String, Flag>, Box<dyn error::Error>> {
+	let paths = fs::read_dir(path)?;
 
 	// this is just for per base sequence quality for now
 	let mut samples = BTreeMap::<String, Flag>::default();
@@ -118,24 +133,22 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 			}
 		}
 	}
-
-	let html = ReportTemplate::new(samples).render()?;
-	let mut file = fs::File::create(outfile)?;
-	file.write_all(html.to_string().as_bytes())?;
-	Ok(())
+	Ok(samples)
 }
 
 #[derive(Template)]
 #[template(path = "report.html")]
 struct ReportTemplate {
 	sample_dirs: BTreeMap<String, Flag>,
+	trimmed_dirs: BTreeMap<String, Flag>,
 	dt: DateTime<Utc>,
 }
 
 impl ReportTemplate {
-	fn new(sample_dirs: BTreeMap<String, Flag>) -> Self {
+	fn new(sample_dirs: BTreeMap<String, Flag>, trimmed_dirs: BTreeMap<String, Flag>) -> Self {
 		ReportTemplate {
 			sample_dirs,
+			trimmed_dirs,
 			dt: Utc::now(),
 		}
 	}
