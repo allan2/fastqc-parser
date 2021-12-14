@@ -33,14 +33,24 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 				.long("output_file")
 				.short('o')
 				.takes_value(true)
-				.default_value("aggregate_report.html"),
+				.default_value("aggregate_report.html")
+				.help("Output file for the report"),
 		)
 		.arg(
 			Arg::new("input_dir")
 				.long("input_dir")
 				.short('i')
 				.takes_value(true)
-				.required(true),
+				.required(true)
+				.help("Location of FastQC reports"),
+		)
+		.arg(
+			Arg::new("trimmed_dir")
+				.long("trimmed_dir")
+				.short('t')
+				.takes_value(true)
+				.required(false)
+				.help("Location of trimmed FastQC reports"),
 		);
 
 	let matches = app.clone().get_matches();

@@ -11,3 +11,8 @@ Example:
 ```sh
 fastqc_reports -i input_dir -o aggregate_report.html
 ```
+
+If the `--trimmed-dir` option is specified, the aggregate report will create another tab with the trimmed reports:
+```sh
+fastqc_reports -i input_dir -t trim_dir -o aggregate_report.html
+```
