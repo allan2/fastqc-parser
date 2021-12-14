@@ -2,9 +2,10 @@
 let showFailOnly = false;
 const getCounts = (divId: string): [number, number] => {
 	const d = document.getElementById(divId) as HTMLDivElement;
-	return [d.querySelectorAll('figure').length, d.querySelectorAll('.pass').length];
+	console.log(divId);
+	return [d.querySelectorAll('figure').length, d.querySelectorAll('.fail').length];
 }
-let [totalCount, passCount] = getCounts("before-trim-content");
+let [totalCount, failCount] = getCounts("before-trim-content");
 
 let numResults = totalCount;
 
@@ -30,17 +31,22 @@ const toggleShowFailOnly = () => {
 	if (!showFailOnly) {
 		numResults = totalCount;
 	} else {
-		numResults = passCount;
+		numResults = failCount;
 	}
+	console.log(numResults);
 	resultsCountEl.innerHTML = showingMsg(numResults);
 }
 
 const toggleVisible = (el: HTMLElement) => (el.style.display == "none") ? el.style.display = "block" : el.style.display = "none";
 
-let checkBox = document.getElementById("check");
-checkBox?.addEventListener("change", toggleShowFailOnly);
+let checkBox = document.getElementById("check") as HTMLInputElement;
+checkBox.addEventListener("change", toggleShowFailOnly);
 
 const openTab = (e: Event) => {
+	// Reset show fail only.
+	showFailOnly = false;
+	checkBox.checked = false;
+
 	// Hide all tab content elements.
 	let tabContentEls = document.getElementsByClassName("tab-content") as HTMLCollectionOf<HTMLDivElement>;
 	for (let i = 0; i < tabContentEls.length; i++) {
@@ -59,11 +65,11 @@ const openTab = (e: Event) => {
 		contentId = "after-trim-content";
 	}
 	// Update the counts.
-	[totalCount, passCount] = getCounts(contentId);
+	[totalCount, failCount] = getCounts(contentId);
 	// Show the tab's content.
 	let content = document.getElementById(contentId) as HTMLDivElement;
 	content.style.display = "block";
-	// Make th tab button active.
+	// Make the tab button active.
 	currEl.classList.add("active");
 	currEl.disabled = true;
 }

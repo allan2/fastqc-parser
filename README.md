@@ -17,3 +17,8 @@ View hundreds of plots in a grid in a single HTML file!
 ```sh
 fastqc_reports -i input_dir -t trim_dir -o aggregate_report.html
 ```
+
+## TODO:
+- image folder paths are hardcoded
+- copy option for images for self-contained reports
+- separate state for show fail only for trimmed and untrimmed

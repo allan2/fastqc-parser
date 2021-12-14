@@ -102,7 +102,6 @@
 		</div>
 
 		<div id="before-trim-content" class="tab-content">
-			<p>hello</p>
 			<div class="per-base-quality-grid">
 				{% for (k, f) in sample_dirs %}
 				{% let flag -%}
@@ -123,7 +122,6 @@
 			</div>
 		</div>
 		<div id="after-trim-content" class="tab-content">
-			<p>Goodbye</p>
 			<div class="per-base-quality-grid">
 				{% for (k, f) in trimmed_dirs %}
 				{% let flag -%}
@@ -137,7 +135,7 @@
 				{% endmatch %}
 				{% let key = k.replace("Sample0", "Sample") %}
 				<figure class="{{ flag }}">
-					<img class="per-base-quality" src="{{key}}_fastqc/Images/per_base_quality.png" />
+					<img class="per-base-quality" src="../trimmed/{{key}}_fastqc/Images/per_base_quality.png" />
 					<figcaption>{{key}}</figcaption>
 				</figure>
 				{% endfor %}
@@ -148,13 +146,13 @@
 	<script>
 		"use strict";
 		// mutable state
-		// mutable state
 		var showFailOnly = false;
 		var getCounts = function (divId) {
 			var d = document.getElementById(divId);
-			return [d.querySelectorAll('figure').length, d.querySelectorAll('.pass').length];
+			console.log(divId);
+			return [d.querySelectorAll('figure').length, d.querySelectorAll('.fail').length];
 		};
-		var _a = getCounts("before-trim-content"), totalCount = _a[0], passCount = _a[1];
+		var _a = getCounts("before-trim-content"), totalCount = _a[0], failCount = _a[1];
 		var numResults = totalCount;
 		var resultsCountEl = document.getElementById("results-count");
 		var showingMsg = function (n) {
@@ -175,15 +173,19 @@
 				numResults = totalCount;
 			}
 			else {
-				numResults = passCount;
+				numResults = failCount;
 			}
+			console.log(numResults);
 			resultsCountEl.innerHTML = showingMsg(numResults);
 		};
 		var toggleVisible = function (el) { return (el.style.display == "none") ? el.style.display = "block" : el.style.display = "none"; };
 		var checkBox = document.getElementById("check");
-		checkBox === null || checkBox === void 0 ? void 0 : checkBox.addEventListener("change", toggleShowFailOnly);
+		checkBox.addEventListener("change", toggleShowFailOnly);
 		var openTab = function (e) {
 			var _a;
+			// Reset show fail only.
+			showFailOnly = false;
+			checkBox.checked = false;
 			// Hide all tab content elements.
 			var tabContentEls = document.getElementsByClassName("tab-content");
 			for (var i = 0; i < tabContentEls.length; i++) {
@@ -201,11 +203,11 @@
 				contentId = "after-trim-content";
 			}
 			// Update the counts.
-			_a = getCounts(contentId), totalCount = _a[0], passCount = _a[1];
+			_a = getCounts(contentId), totalCount = _a[0], failCount = _a[1];
 			// Show the tab's content.
 			var content = document.getElementById(contentId);
 			content.style.display = "block";
-			// Make th tab button active.
+			// Make the tab button active.
 			currEl.classList.add("active");
 			currEl.disabled = true;
 		};

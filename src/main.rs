@@ -116,7 +116,7 @@ fn samples_map(path: &Path) -> Result<BTreeMap<String, Flag>, Box<dyn error::Err
 							let mut k = dir.clone();
 							// We use zero-padded filenames as keys.
 							// For example, Sample1 is Sample01.
-							// This gives us the natural ordering that we want in the template.
+							// This is for natural sort.
 							let part = k.splitn(2, "Sample").collect::<Vec<&str>>()[1]
 								.splitn(2, "_")
 								.collect::<Vec<&str>>();
