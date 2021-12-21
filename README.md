@@ -5,11 +5,14 @@ An aggregator for FastQC sequence data reports.
 This program summarizes many reports from [FastQC](https://github.com/s-andrews/FastQC) together.
 
 ## Features
- - separate tabs for untrimmed sequence data and trimmed sequence data
- - toggle to show failed tests only
 
- ## Currently Supported Metrics
- - per base sequence quality
+- separate tabs for untrimmed sequence data and trimmed sequence data
+- toggle to show failed tests only
+- outputs a report showing trimmed amount per sequence
+
+## Currently Supported Metrics
+
+- per base sequence quality
 
 No longer will you have open separate files and flipping through them all to check your sequence data quality.
 View hundreds of plots in a grid in a single HTML file!
@@ -19,12 +22,18 @@ View hundreds of plots in a grid in a single HTML file!
 
 ## Usage
 
+To generate the HTML aggregate report:
 
 ```sh
-fastqc_reports -i input_dir -t trim_dir -o aggregate_report.html
+fastqc_reports aggregate-reports -i input_dir -t trim_dir -o aggregate_report.html
 ```
 
+To generate a CSV with the trim length differences:
+
 ## TODO:
+
+- change output destination of aggregate_report.html from input_dir to root
 - image folder paths are hardcoded
 - copy option for images for self-contained reports
 - separate state for show fail only for trimmed and untrimmed
+- add the trimmed amount to the aggregate report

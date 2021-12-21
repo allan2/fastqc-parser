@@ -1,5 +1,5 @@
 [package]
-name = "fastqc_parser"
+name = "fastqc_reports"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,4 +12,4 @@ askama = "0.10"
 chrono = "0.4"
 rustc-hash = "1"
 itertools = "0.10"
-clap = "3.0.0-rc.4"
+clap = "3.0.0-rc.7"

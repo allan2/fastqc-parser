@@ -25,57 +25,78 @@ struct Summary {
 /// The inputs are the directories outputted from FastQC after unzipping.
 /// Each directory contains the report for a sample.
 fn main() -> Result<(), Box<dyn error::Error>> {
+	let output_file_arg = Arg::new("output_file")
+		.long("output_file")
+		.short('o')
+		.takes_value(true);
+	let input_dir_arg = Arg::new("input_dir")
+		.long("input_dir")
+		.short('i')
+		.takes_value(true)
+		.required(true)
+		.help("Location of FastQC reports");
+	let trimmed_dir_arg = Arg::new("trimmed_dir")
+		.long("trimmed_dir")
+		.short('t')
+		.takes_value(true)
+		.required(true)
+		.help("Location of trimmed FastQC reports");
+
 	let app = App::new("fastqc_report")
 		.version("0.1")
 		.about("Aggregator for FastQC reports")
-		.arg(
-			Arg::new("output_file")
-				.long("output_file")
-				.short('o')
-				.takes_value(true)
-				.default_value("aggregate_report.html")
-				.help("Output file for the report"),
+		.subcommand(
+			App::new("aggregate-report")
+				.arg(
+					output_file_arg
+						.clone()
+						.default_value("aggregate_report.html")
+						.help("Output file for the report"),
+				)
+				.arg(input_dir_arg.clone())
+				.arg(trimmed_dir_arg.clone()),
 		)
-		.arg(
-			Arg::new("input_dir")
-				.long("input_dir")
-				.short('i')
-				.takes_value(true)
-				.required(true)
-				.help("Location of FastQC reports"),
-		)
-		.arg(
-			Arg::new("trimmed_dir")
-				.long("trimmed_dir")
-				.short('t')
-				.takes_value(true)
-				.required(true)
-				.help("Location of trimmed FastQC reports"),
+		.subcommand(
+			App::new("trim-length")
+				.arg(
+					output_file_arg
+						.default_value("trimmed_length_deltas.csv")
+						.help("Output file for the trimmed length deltas"),
+				)
+				.arg(input_dir_arg)
+				.arg(trimmed_dir_arg),
 		);
 
 	let matches = app.clone().get_matches();
-	let outfile = match matches.value_of("output_file") {
-		Some(v) => v,
-		None => unreachable!("No output file specified"),
-	};
 
-	let data_dir = match matches.value_of("input_dir") {
-		Some(v) => Path::new(v),
-		None => unreachable!("No input directory specified"),
-	};
-	let outfile = data_dir.join(outfile);
+	match matches.subcommand() {
+		Some(("aggregate-report", submatches)) => {
+			let outfile = match submatches.value_of("output_file") {
+				Some(v) => v,
+				None => unreachable!("No output file specified"),
+			};
 
-	let samples = samples_map(data_dir)?;
+			let data_dir = match submatches.value_of("input_dir") {
+				Some(v) => Path::new(v),
+				None => unreachable!("No input directory specified"),
+			};
+			let outfile = data_dir.join(outfile);
 
-	let trimmed_dir = match matches.value_of("trimmed_dir") {
-		Some(v) => Path::new(v),
-		None => unreachable!("No trimmed directory specified"),
-	};
+			let samples = samples_map(data_dir)?;
 
-	let trimmed = samples_map(trimmed_dir)?;
-	let html = ReportTemplate::new(samples, trimmed).render()?;
-	let mut file = fs::File::create(outfile)?;
-	file.write_all(html.to_string().as_bytes())?;
+			let trimmed_dir = match submatches.value_of("trimmed_dir") {
+				Some(v) => Path::new(v),
+				None => unreachable!("No trimmed directory specified"),
+			};
+
+			let trimmed = samples_map(trimmed_dir)?;
+			let html = ReportTemplate::new(samples, trimmed).render()?;
+			let mut file = fs::File::create(outfile)?;
+			file.write_all(html.to_string().as_bytes())?;
+		}
+		_ => {}
+	}
+
 	Ok(())
 }
 
