@@ -1,8 +1,14 @@
 use askama::Template;
 use chrono::{DateTime, Utc};
-use clap::{App, Arg};
+use clap::{App, Arg, ArgMatches};
+use csv::Writer;
 use serde::Deserialize;
-use std::{collections::BTreeMap, error, fs, io::Write, path::Path};
+use std::{
+	collections::BTreeMap,
+	error, fs,
+	io::Write,
+	path::{Path, PathBuf},
+};
 
 #[derive(Debug, Deserialize)]
 enum Flag {
@@ -42,7 +48,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 		.required(true)
 		.help("Location of trimmed FastQC reports");
 
-	let app = App::new("fastqc_report")
+	let mut app = App::new("fastqc_report")
 		.version("0.1")
 		.about("Aggregator for FastQC reports")
 		.subcommand(
@@ -71,30 +77,20 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
 	match matches.subcommand() {
 		Some(("aggregate-report", submatches)) => {
-			let outfile = match submatches.value_of("output_file") {
-				Some(v) => v,
-				None => unreachable!("No output file specified"),
-			};
-
-			let data_dir = match submatches.value_of("input_dir") {
-				Some(v) => Path::new(v),
-				None => unreachable!("No input directory specified"),
-			};
-			let outfile = data_dir.join(outfile);
-
+			let (outfile, data_dir, trimmed_dir) = dests_from_argmatches(submatches);
 			let samples = samples_map(data_dir)?;
-
-			let trimmed_dir = match submatches.value_of("trimmed_dir") {
-				Some(v) => Path::new(v),
-				None => unreachable!("No trimmed directory specified"),
-			};
 
 			let trimmed = samples_map(trimmed_dir)?;
 			let html = ReportTemplate::new(samples, trimmed).render()?;
 			let mut file = fs::File::create(outfile)?;
 			file.write_all(html.to_string().as_bytes())?;
 		}
-		_ => {}
+		Some(("trim-length", submatches)) => {
+			let (outfile, data_dir, trimmed_dir) = dests_from_argmatches(submatches);
+			let mut wtr = Writer::from_path(outfile)?;
+			// add trim length logic
+		}
+		_ => app.print_help()?,
 	}
 
 	Ok(())
@@ -155,6 +151,26 @@ fn samples_map(path: &Path) -> Result<BTreeMap<String, Flag>, Box<dyn error::Err
 		}
 	}
 	Ok(samples)
+}
+
+/// Get the outfile, input_dir, and trimmed_dir in a tuple from the subcommand ArgMatches.
+fn dests_from_argmatches(matches: &ArgMatches) -> (PathBuf, &Path, &Path) {
+	let outfile = match matches.value_of("output_file") {
+		Some(v) => v,
+		None => unreachable!("No output file specified"),
+	};
+
+	let data_dir = match matches.value_of("input_dir") {
+		Some(v) => Path::new(v),
+		None => unreachable!("No input directory specified"),
+	};
+	let outfile = data_dir.join(outfile);
+
+	let trimmed_dir = match matches.value_of("trimmed_dir") {
+		Some(v) => Path::new(v),
+		None => unreachable!("No trimmed directory specified"),
+	};
+	(outfile, data_dir, trimmed_dir)
 }
 
 #[derive(Template)]
