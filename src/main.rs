@@ -87,12 +87,69 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 		}
 		Some(("trim-length", submatches)) => {
 			let (outfile, data_dir, trimmed_dir) = dests_from_argmatches(submatches);
+
 			let mut wtr = Writer::from_path(outfile)?;
 			// add trim length logic
 		}
 		_ => app.print_help()?,
 	}
 
+	Ok(())
+}
+
+fn trim_length(path: &Path) -> Result<(), Box<dyn error::Error>> {
+	let paths = fs::read_dir(path)?;
+
+	let mut map = BTreeMap::<String, u8>::new();
+	for sample in paths {}
+
+	for sample in paths {
+		let sample = sample?.path();
+		if !sample.is_dir() {
+			continue;
+		}
+		let dir = sample
+			.file_name()
+			.unwrap()
+			.to_str()
+			.unwrap()
+			.split("_fastqc")
+			.collect::<Vec<&str>>()[0]
+			.to_owned();
+
+		'outer: for file_path in fs::read_dir(sample).unwrap() {
+			let direntry = file_path?;
+			match direntry.file_name().to_str().unwrap() {
+				"fastqc_data.txt" => {
+					let file = fs::File::open(direntry.path())?;
+
+					// get 8th line
+
+
+					for res in rdr.deserialize::<Summary>() {
+						let res = res?;
+						if res.test == "Per base sequence quality" {
+							// TODO: Remove clone. It's inexpensive but can be avoided
+							let mut k = dir.clone();
+							// We use zero-padded filenames as keys.
+							// For example, Sample1 is Sample01.
+							// This is for natural sort.
+							let part = k.splitn(2, "Sample").collect::<Vec<&str>>()[1]
+								.splitn(2, "_")
+								.collect::<Vec<&str>>();
+							let sample_num = part[0].parse::<u32>()?;
+							if sample_num < 10 {
+								k = format!("Sample0{}_{}", sample_num, part[1]);
+							}
+							samples.insert(k, res.flag);
+							continue 'outer;
+						}
+					}
+				}
+				_ => (),
+			}
+		}
+	}
 	Ok(())
 }
 
