@@ -30,6 +30,10 @@ fastqc_reports aggregate-reports -i input_dir -t trim_dir -o aggregate_report.ht
 
 To generate a CSV with the trim length differences:
 
+```sh
+fastqc_reports trim-length -i input_dir -t trim_dir -o trim_change.csv
+```
+
 ## TODO:
 
 - change output destination of aggregate_report.html from input_dir to root
