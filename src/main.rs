@@ -6,7 +6,7 @@ use serde::Deserialize;
 use std::{
 	collections::BTreeMap,
 	error, fs,
-	io::Write,
+	io::{self, BufRead, Write},
 	path::{Path, PathBuf},
 };
 
@@ -87,9 +87,15 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 		}
 		Some(("trim-length", submatches)) => {
 			let (outfile, data_dir, trimmed_dir) = dests_from_argmatches(submatches);
-
-			let mut wtr = Writer::from_path(outfile)?;
-			// add trim length logic
+			let before_lengths = seq_len_from_dir(data_dir)?;
+			let mut after_lengths = seq_len_from_dir(trimmed_dir)?;
+			// Join the maps.
+			let lengths = before_lengths
+				.clone()
+				.into_iter()
+				.filter_map(|(k, v_a)| after_lengths.remove(&k).map(|v_b| (k, (v_a, v_b))))
+				.collect::<BTreeMap<String, (u16, u16)>>();
+			println!("{:?}", lengths);
 		}
 		_ => app.print_help()?,
 	}
@@ -97,51 +103,36 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 	Ok(())
 }
 
-fn trim_length(path: &Path) -> Result<(), Box<dyn error::Error>> {
+fn seq_len_from_dir(path: &Path) -> Result<BTreeMap<String, u16>, Box<dyn error::Error>> {
 	let paths = fs::read_dir(path)?;
 
-	let mut map = BTreeMap::<String, u8>::new();
-	for sample in paths {}
-
+	let mut map = BTreeMap::<String, u16>::new();
 	for sample in paths {
 		let sample = sample?.path();
 		if !sample.is_dir() {
 			continue;
 		}
-		let dir = sample
-			.file_name()
-			.unwrap()
-			.to_str()
-			.unwrap()
-			.split("_fastqc")
-			.collect::<Vec<&str>>()[0]
-			.to_owned();
+		let dir = dirname(&sample);
 
 		'outer: for file_path in fs::read_dir(sample).unwrap() {
 			let direntry = file_path?;
 			match direntry.file_name().to_str().unwrap() {
 				"fastqc_data.txt" => {
 					let file = fs::File::open(direntry.path())?;
-
-					// get 8th line
-
-
-					for res in rdr.deserialize::<Summary>() {
-						let res = res?;
-						if res.test == "Per base sequence quality" {
-							// TODO: Remove clone. It's inexpensive but can be avoided
-							let mut k = dir.clone();
-							// We use zero-padded filenames as keys.
-							// For example, Sample1 is Sample01.
-							// This is for natural sort.
-							let part = k.splitn(2, "Sample").collect::<Vec<&str>>()[1]
-								.splitn(2, "_")
-								.collect::<Vec<&str>>();
-							let sample_num = part[0].parse::<u32>()?;
-							if sample_num < 10 {
-								k = format!("Sample0{}_{}", sample_num, part[1]);
-							}
-							samples.insert(k, res.flag);
+					for line in io::BufReader::new(file).lines() {
+						let line = line?;
+						if line.starts_with("Sequence length") {
+							let seq_pos = line
+								.split_whitespace()
+								.nth(2)
+								.unwrap()
+								.split('-')
+								.map(|n| n.parse::<u16>().unwrap())
+								.collect::<Vec<u16>>();
+							let seq_len = seq_pos[1] - seq_pos[0];
+							// We want the key in our collection to match for before and after trim.
+							let dir = dir.replace("_paired_", "_");
+							map.insert(dir.clone(), seq_len);
 							continue 'outer;
 						}
 					}
@@ -150,7 +141,7 @@ fn trim_length(path: &Path) -> Result<(), Box<dyn error::Error>> {
 			}
 		}
 	}
-	Ok(())
+	Ok(map)
 }
 
 fn samples_map(path: &Path) -> Result<BTreeMap<String, Flag>, Box<dyn error::Error>> {
@@ -165,49 +156,51 @@ fn samples_map(path: &Path) -> Result<BTreeMap<String, Flag>, Box<dyn error::Err
 		if !sample.is_dir() {
 			continue;
 		}
-		let dir = sample
-			.file_name()
-			.unwrap()
-			.to_str()
-			.unwrap()
-			.split("_fastqc")
-			.collect::<Vec<&str>>()[0]
-			.to_owned();
+		let dir = dirname(&sample);
 
 		'outer: for file_path in fs::read_dir(sample).unwrap() {
 			let direntry = file_path?;
-			match direntry.file_name().to_str().unwrap() {
-				"summary.txt" => {
-					let file = fs::File::open(direntry.path())?;
-					let mut rdr = csv::ReaderBuilder::new()
-						.delimiter(b'\t')
-						.has_headers(false)
-						.from_reader(file);
-					for res in rdr.deserialize::<Summary>() {
-						let res = res?;
-						if res.test == "Per base sequence quality" {
-							// TODO: Remove clone. It's inexpensive but can be avoided
-							let mut k = dir.clone();
-							// We use zero-padded filenames as keys.
-							// For example, Sample1 is Sample01.
-							// This is for natural sort.
-							let part = k.splitn(2, "Sample").collect::<Vec<&str>>()[1]
-								.splitn(2, "_")
-								.collect::<Vec<&str>>();
-							let sample_num = part[0].parse::<u32>()?;
-							if sample_num < 10 {
-								k = format!("Sample0{}_{}", sample_num, part[1]);
-							}
-							samples.insert(k, res.flag);
-							continue 'outer;
+			if direntry.file_name().to_str().unwrap() == "summary.txt" {
+				let file = fs::File::open(direntry.path())?;
+				let mut rdr = csv::ReaderBuilder::new()
+					.delimiter(b'\t')
+					.has_headers(false)
+					.from_reader(file);
+				for res in rdr.deserialize::<Summary>() {
+					let res = res?;
+					if res.test == "Per base sequence quality" {
+						// TODO: Remove clone. It's inexpensive but can be avoided
+						let mut k = dir.clone();
+						// We use zero-padded filenames as keys.
+						// For example, Sample1 is Sample01.
+						// This is for natural sort.
+						let part = k.splitn(2, "Sample").collect::<Vec<&str>>()[1]
+							.splitn(2, "_")
+							.collect::<Vec<&str>>();
+						let sample_num = part[0].parse::<u32>()?;
+						if sample_num < 10 {
+							k = format!("Sample0{sample_num}_{}", part[1]);
 						}
+						samples.insert(k, res.flag);
+						continue 'outer;
 					}
 				}
-				_ => (),
 			}
 		}
 	}
 	Ok(samples)
+}
+
+/// Get the directory name for a sample.
+fn dirname(sample_pathbuf: &PathBuf) -> String {
+	sample_pathbuf
+		.file_name()
+		.unwrap()
+		.to_str()
+		.unwrap()
+		.split("_fastqc")
+		.collect::<Vec<&str>>()[0]
+		.to_owned()
 }
 
 /// Get the outfile, input_dir, and trimmed_dir in a tuple from the subcommand ArgMatches.
